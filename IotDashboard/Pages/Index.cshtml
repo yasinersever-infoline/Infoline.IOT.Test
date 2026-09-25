@@ -1,10 +1,35 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Ölçümler";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h1>Ölçümler</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Cihaz</th>
+            <th>Zaman</th>
+            <th>Sıcaklık (°C)</th>
+            <th>Nem (%)</th>
+            <th>Işık sensörü</th>
+            <th>Kızılötesi</th>
+            <th>Röle</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Measurements)
+        {
+            <tr>
+                <td>@item.DeviceCode</td>
+                <td>@item.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                <td>@(item.Temperature?.ToString("0.##") ?? "")</td>
+                <td>@(item.Humidity?.ToString("0.##") ?? "")</td>
+                <td>@(item.Dark.HasValue ? (item.Dark.Value ? "Karanlık" : "Aydınlık") : "")</td>
+                <td>@(item.Infrared.HasValue ? (item.Infrared.Value ? "Algılandı" : "Algılanmadı") : "")</td>
+                <td>@(item.LightOn.HasValue ? (item.LightOn.Value ? "Açık" : "Kapalı") : "")</td>
+            </tr>
+        }
+    </tbody>
+</table>

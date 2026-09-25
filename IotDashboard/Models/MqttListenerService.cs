@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging; // 🌟 1. Loglama kütüphanesini ekleyin
+using Microsoft.Extensions.Logging; 
 using MQTTnet;
 using System.Text;
 using System.Text.Json;
@@ -10,12 +10,12 @@ namespace IotDashboard.Models
     {
         private readonly IMqttClient _mqttClient;
         private readonly MqttClientOptions _mqttOptions;
-        private readonly ILogger<MqttListenerService> _logger; // 🌟 2. Logger değişkenini tanımlayın
+        private readonly ILogger<MqttListenerService> _logger;
 
-        // 🌟 3. Constructor (Yapıcı Metot) içine ILogger enjekte edin
+       
         public MqttListenerService(ILogger<MqttListenerService> logger)
         {
-            _logger = logger; // Logger'ı atayın
+            _logger = logger; 
 
             var mqttFactory = new MqttClientFactory();
             _mqttClient = mqttFactory.CreateMqttClient();
@@ -33,7 +33,7 @@ namespace IotDashboard.Models
             {
                 var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
 
-                // 🌟 4. Gelen ham veriyi log olarak yazdırın
+             
                 _logger.LogInformation($"[MQTT Verisi Geldi] Ham Payload: {payload}");
 
                 try
@@ -43,11 +43,20 @@ namespace IotDashboard.Models
 
                     if (incomingData != null)
                     {
-                        IotDataStore.CurrentData.Temperature = incomingData.Temperature;
-                        IotDataStore.CurrentData.Humidity = incomingData.Humidity;
-                        IotDataStore.CurrentData.Timestamp = DateTime.Now;
+                        // IotDataStore.CurrentData.Temperature = incomingData.Temperature;
+                        //IotDataStore.CurrentData.Humidity = incomingData.Humidity;
+                        // IotDataStore.CurrentData.Timestamp = DateTime.Now;
+                        incomingData.DeviceCode = e.ApplicationMessage.Topic switch
+                        {
+                            "iot/esp_emre/telemetry" => "esp_emre",
+                            "iot/esp_nursemin/telemetry" => "esp_nursemin",
+                            _ => incomingData.DeviceCode
+                        };
 
-                        // 🌟 5. Başarılı çözümlenen veriyi loglayın
+                        incomingData.Timestamp = DateTime.Now;
+                        IotDataStore.Add(incomingData);
+
+                        
                         _logger.LogInformation($"[Veri İşlendi] Sıcaklık: {incomingData.Temperature}°C, Nem: {incomingData.Humidity}%");
                     }
                 }
@@ -69,8 +78,10 @@ namespace IotDashboard.Models
                         await _mqttClient.ConnectAsync(_mqttOptions, stoppingToken);
                         _logger.LogInformation("[MQTT] Mosquitto brokerına başarıyla BAĞLANDI!");
 
-                        await _mqttClient.SubscribeAsync("ev/salon/sensor", cancellationToken: stoppingToken);
-                        _logger.LogInformation("[MQTT] 'ev/salon/sensor' konusu başarıyla dinlenmeye başlandı.");
+                        await _mqttClient.SubscribeAsync("iot/esp_emre/telemetry", cancellationToken: stoppingToken);
+
+                        await _mqttClient.SubscribeAsync("iot/esp_nursemin/telemetry",cancellationToken: stoppingToken);
+                        _logger.LogInformation("[MQTT] İki ESP'nin telemetri konuları dinleniyor.");
                     }
                 }
                 catch (Exception ex)
